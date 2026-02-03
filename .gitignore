@@ -29,6 +29,12 @@ bun.lockb
 *.db-shm
 *.db-wal
 
+# Generated i18n
+apps/web/src/lib/paraglide/
+
+# Data directory
+data/
+
 # Local Nix
 .direnv/
 

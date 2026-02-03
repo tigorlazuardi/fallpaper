@@ -10,17 +10,17 @@
 	<title>Fallpaper</title>
 </svelte:head>
 
-<div class="min-h-screen bg-zinc-950 text-zinc-100 overflow-x-hidden">
+<div class="dark min-h-screen bg-background text-foreground overflow-x-hidden">
 	<!-- Header -->
-	<header class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+	<header class="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
 		<div class="px-4 max-w-7xl mx-auto">
 			<div class="flex h-14 items-center justify-between">
 				<a href="/" class="text-xl font-bold shrink-0">Fallpaper</a>
 				<nav class="flex items-center gap-4 sm:gap-6">
-					<a href="/" class="text-sm text-zinc-400 hover:text-zinc-100">Gallery</a>
-					<a href="/devices" class="text-sm text-zinc-400 hover:text-zinc-100">Devices</a>
-					<a href="/sources" class="text-sm text-zinc-400 hover:text-zinc-100">Sources</a>
-					<a href="/runs" class="text-sm text-zinc-400 hover:text-zinc-100">Runs</a>
+					<a href="/" class="text-sm text-muted-foreground hover:text-foreground">Gallery</a>
+					<a href="/devices" class="text-sm text-muted-foreground hover:text-foreground">Devices</a>
+					<a href="/sources" class="text-sm text-muted-foreground hover:text-foreground">Sources</a>
+					<a href="/runs" class="text-sm text-muted-foreground hover:text-foreground">Runs</a>
 				</nav>
 			</div>
 		</div>
