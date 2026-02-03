@@ -2,6 +2,7 @@ import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 import { subscriptions } from "./subscription";
+import { deviceImages } from "./device-image";
 
 export const devices = sqliteTable("devices", {
   // UUID v7
@@ -43,6 +44,7 @@ export const devices = sqliteTable("devices", {
 
 export const devicesRelations = relations(devices, ({ many }) => ({
   subscriptions: many(subscriptions),
+  deviceImages: many(deviceImages),
 }));
 
 export type Device = typeof devices.$inferSelect;

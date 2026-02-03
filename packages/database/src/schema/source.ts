@@ -3,6 +3,7 @@ import { relations, sql } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 import { subscriptions } from "./subscription";
 import { schedules } from "./schedule";
+import { images } from "./image";
 
 export const sources = sqliteTable(
   "sources",
@@ -32,6 +33,7 @@ export const sources = sqliteTable(
 export const sourcesRelations = relations(sources, ({ many }) => ({
   subscriptions: many(subscriptions),
   schedules: many(schedules),
+  images: many(images),
 }));
 
 export type Source = typeof sources.$inferSelect;
