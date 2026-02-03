@@ -4,6 +4,7 @@ import { uuidv7 } from "uuidv7";
 import { subscriptions } from "./subscription";
 import { schedules } from "./schedule";
 import { images } from "./image";
+import { runs } from "./run";
 
 export const sources = sqliteTable(
   "sources",
@@ -34,6 +35,7 @@ export const sourcesRelations = relations(sources, ({ many }) => ({
   subscriptions: many(subscriptions),
   schedules: many(schedules),
   images: many(images),
+  runs: many(runs),
 }));
 
 export type Source = typeof sources.$inferSelect;

@@ -2,6 +2,7 @@ import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 import { sources } from "./source";
+import { runs } from "./run";
 
 export const schedules = sqliteTable(
   "schedules",
@@ -22,11 +23,12 @@ export const schedules = sqliteTable(
   ]
 );
 
-export const schedulesRelations = relations(schedules, ({ one }) => ({
+export const schedulesRelations = relations(schedules, ({ one, many }) => ({
   source: one(sources, {
     fields: [schedules.sourceId],
     references: [sources.id],
   }),
+  runs: many(runs),
 }));
 
 export type Schedule = typeof schedules.$inferSelect;
