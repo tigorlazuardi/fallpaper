@@ -28,6 +28,7 @@
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
               bun
+              just
             ];
           };
           packages.default = pkgs.hello;

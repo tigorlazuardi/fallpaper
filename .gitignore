@@ -24,5 +24,15 @@ bun.lockb
 # Logs
 *.log
 
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
 # Local Nix
 .direnv/
+
+*.tsbuildinfo
+
+artifacts/*
+!artifacts/.gitkeep

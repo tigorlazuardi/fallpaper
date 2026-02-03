@@ -1,2 +1,6 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<div class="min-h-screen flex items-center justify-center bg-zinc-950">
+	<div class="text-center">
+		<h1 class="text-4xl font-bold text-white mb-4">Fallpaper</h1>
+		<p class="text-zinc-400">Wallpaper collection service</p>
+	</div>
+</div>
