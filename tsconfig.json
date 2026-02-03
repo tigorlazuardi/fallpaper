@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "paths": {
+      "@packages/*": ["./packages/*/src"],
+      "@apps/*": ["./apps/*"]
+    }
+  },
+  "references": [
+    { "path": "./apps/web" },
+    { "path": "./packages/shared" }
+  ]
+}
