@@ -8,6 +8,27 @@
       "when": 1770121431978,
       "tag": "0000_worried_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1770122402125,
+      "tag": "0001_nebulous_zaladane",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770122714561,
+      "tag": "0002_melodic_swarm",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1770123038951,
+      "tag": "0003_previous_angel",
+      "breakpoints": true
     }
   ]
 }

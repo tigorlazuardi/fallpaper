@@ -1,0 +1,1 @@
+- Schema many-to-many wajib memiliki index 2 arah
