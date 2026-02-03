@@ -23,6 +23,7 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
-		"bits-ui": "^2.15.5"
+		"bits-ui": "^2.15.5",
+		"svelte-bricks": "^0.4.1"
 	}
 }
