@@ -3,7 +3,7 @@ import { sources, schedules, subscriptions, devices, withQueryName } from "@pack
 import { redditSourceSchema, formDataToDbSource } from "$lib/schemas/source";
 import { superValidate, fail, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
-import { redirect } from "@sveltejs/kit";
+import { redirect, isRedirect } from "@sveltejs/kit";
 import type { PageServerLoad, Actions } from "./$types";
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -97,6 +97,7 @@ export const actions: Actions = {
 
       redirect(303, "/sources");
     } catch (err: any) {
+      if (isRedirect(err)) throw err;
       if (err.message?.includes("UNIQUE constraint failed")) {
         return message(form, "A source with this name already exists", { status: 400 });
       }

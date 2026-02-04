@@ -4,8 +4,8 @@ import { redditSourceSchema, formDataToDbSource, dbSourceToFormData } from "$lib
 import { superValidate, fail, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
 import { eq } from "drizzle-orm";
-import { error, redirect } from "@sveltejs/kit";
-import type { PageServerLoad, Actions, RequestEvent } from "./$types";
+import { error, redirect, isRedirect } from "@sveltejs/kit";
+import type { PageServerLoad, Actions } from "./$types";
 
 export const load: PageServerLoad = async ({ params }) => {
   const source = await withQueryName("Sources.GetById", async () =>
@@ -114,6 +114,7 @@ export const actions: Actions = {
 
       redirect(303, "/sources");
     } catch (err: any) {
+      if (isRedirect(err)) throw err;
       if (err.message?.includes("UNIQUE constraint failed")) {
         return message(form, "A source with this name already exists", { status: 400 });
       }
@@ -122,19 +123,3 @@ export const actions: Actions = {
     }
   },
 };
-
-// Handle DELETE requests
-export async function DELETE({ params }: RequestEvent) {
-  try {
-    await withQueryName("Sources.Delete", async () =>
-      await db.delete(sources).where(eq(sources.id, params.id))
-    );
-    return new Response(null, { status: 204 });
-  } catch (err) {
-    console.error("Failed to delete source:", err);
-    return new Response(JSON.stringify({ error: "Failed to delete source" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-}

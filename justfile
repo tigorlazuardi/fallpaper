@@ -7,12 +7,14 @@ install:
     bun install
 
 # Run web dev server
+[working-directory: 'apps/web']
 dev:
-    bun run --filter @apps/web dev
+    bunx --bun vite dev
 
 # Build web
+[working-directory: 'apps/web']
 build:
-    bun run --filter @apps/web build
+    bunx --bun vite build
 
 # Database commands
 [working-directory: 'packages/database']

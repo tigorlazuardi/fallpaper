@@ -14,6 +14,8 @@ export const subscriptions = sqliteTable(
       .notNull()
       .references(() => sources.id, { onDelete: "cascade" }),
 
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+
     createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   },
   (table) => [

@@ -1,0 +1,1 @@
+ALTER TABLE `subscriptions` ADD `enabled` integer DEFAULT true NOT NULL;

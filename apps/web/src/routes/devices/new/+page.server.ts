@@ -3,7 +3,7 @@ import { devices, withQueryName } from "@packages/database";
 import { deviceSchema } from "$lib/schemas/device";
 import { superValidate, fail, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
-import { redirect } from "@sveltejs/kit";
+import { redirect, isRedirect } from "@sveltejs/kit";
 import type { PageServerLoad, Actions } from "./$types";
 
 export const load: PageServerLoad = async () => {
@@ -40,6 +40,7 @@ export const actions: Actions = {
 
       redirect(303, "/devices");
     } catch (err: any) {
+      if (isRedirect(err)) throw err;
       if (err.message?.includes("UNIQUE constraint failed")) {
         return message(form, "A device with this slug already exists", { status: 400 });
       }

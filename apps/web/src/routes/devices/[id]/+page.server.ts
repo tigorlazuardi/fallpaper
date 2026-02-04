@@ -4,8 +4,8 @@ import { deviceSchema } from "$lib/schemas/device";
 import { superValidate, fail, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
 import { eq } from "drizzle-orm";
-import { error, redirect } from "@sveltejs/kit";
-import type { PageServerLoad, Actions, RequestEvent } from "./$types";
+import { error, redirect, isRedirect } from "@sveltejs/kit";
+import type { PageServerLoad, Actions } from "./$types";
 
 export const load: PageServerLoad = async ({ params }) => {
   const device = await withQueryName("Devices.GetById", async () =>
@@ -56,6 +56,7 @@ export const actions: Actions = {
 
       redirect(303, "/devices");
     } catch (err: any) {
+      if (isRedirect(err)) throw err;
       if (err.message?.includes("UNIQUE constraint failed")) {
         return message(form, "A device with this slug already exists", { status: 400 });
       }
@@ -65,18 +66,4 @@ export const actions: Actions = {
   },
 };
 
-// Handle DELETE requests
-export async function DELETE({ params }: RequestEvent) {
-  try {
-    await withQueryName("Devices.Delete", async () =>
-      await db.delete(devices).where(eq(devices.id, params.id))
-    );
-    return new Response(null, { status: 204 });
-  } catch (err) {
-    console.error("Failed to delete device:", err);
-    return new Response(JSON.stringify({ error: "Failed to delete device" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-}
+
