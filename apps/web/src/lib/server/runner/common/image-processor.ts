@@ -42,6 +42,8 @@ export interface SourceImage {
  * Result of processing a single image
  */
 export interface ProcessedImage {
+  /** Image URL that was processed */
+  url: string;
   /** Whether processing was successful */
   success: boolean;
   /** Whether the image was skipped (not an error) */
@@ -208,6 +210,7 @@ export async function processDownloadedImage(
   config: ImageProcessorConfig
 ): Promise<ProcessedImage> {
   const result: ProcessedImage = {
+    url: sourceImage.downloadUrl,
     success: false,
   };
 
@@ -388,6 +391,7 @@ export async function downloadAndProcessImages<T extends SourceImage>(
     // Download failed
     if (!dlResult.success || !dlResult.data) {
       const processResult: ProcessedImage = {
+        url: sourceImage.downloadUrl,
         success: false,
         error: dlResult.error ?? "Download failed",
       };
@@ -426,6 +430,7 @@ export async function downloadAndProcessImages<T extends SourceImage>(
     } catch (err: any) {
       result.failed++;
       result.results.push({
+        url: sourceImage.downloadUrl,
         success: false,
         error: err.message ?? String(err),
       });

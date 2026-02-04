@@ -4,6 +4,7 @@ import { redditSourceSchema, formDataToDbSource } from "$lib/schemas/source";
 import { superValidate, fail, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
 import { redirect, isRedirect } from "@sveltejs/kit";
+import { getScheduler } from "$lib/server/scheduler";
 import type { PageServerLoad, Actions } from "./$types";
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -76,6 +77,9 @@ export const actions: Actions = {
             }))
           )
         );
+
+        // Notify scheduler of new schedules
+        await getScheduler().reloadSchedules();
       }
 
       // Create subscriptions (device -> source links)

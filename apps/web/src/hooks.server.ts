@@ -2,10 +2,24 @@ import { trace, context, SpanStatusCode } from "@opentelemetry/api";
 import { W3CTraceContextPropagator } from "@opentelemetry/core";
 import { getLogger } from "@packages/otel-server";
 import type { Handle } from "@sveltejs/kit";
+import { startScheduler } from "$lib/server/scheduler";
 
 const tracer = trace.getTracer("sveltekit");
 const propagator = new W3CTraceContextPropagator();
 const logger = getLogger();
+
+// Start scheduler once on server startup (prevent multiple starts during hot reload)
+declare global {
+  // eslint-disable-next-line no-var
+  var __schedulerInitialized: boolean | undefined;
+}
+
+if (!globalThis.__schedulerInitialized) {
+  globalThis.__schedulerInitialized = true;
+  startScheduler().catch((err) => {
+    logger.error({ err }, "Failed to start scheduler");
+  });
+}
 
 /**
  * Extract trace context from incoming request headers.

@@ -5,6 +5,7 @@ import { superValidate, fail, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
 import { eq } from "drizzle-orm";
 import { error, redirect, isRedirect } from "@sveltejs/kit";
+import { getScheduler } from "$lib/server/scheduler";
 import type { PageServerLoad, Actions } from "./$types";
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -91,6 +92,9 @@ export const actions: Actions = {
           )
         );
       }
+
+      // Notify scheduler of schedule changes
+      await getScheduler().reloadSchedules();
 
       // Update subscriptions: delete old, insert new
       await withQueryName("Sources.DeleteSubscriptions", async () =>

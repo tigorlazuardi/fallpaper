@@ -23,6 +23,7 @@ export interface BaseRunnerConfig {
 
 /**
  * Result of processing a single image
+ * Note: Duplicated in image-processor.ts as ProcessedImage (they must match)
  */
 export interface ImageProcessResult {
   /** Image URL that was processed */
