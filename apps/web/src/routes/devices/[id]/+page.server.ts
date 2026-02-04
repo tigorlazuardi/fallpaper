@@ -1,5 +1,5 @@
 import { db } from "$lib/server/db";
-import { devices } from "@packages/database";
+import { devices, withQueryName } from "@packages/database";
 import { deviceSchema } from "$lib/schemas/device";
 import { superValidate, fail, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
@@ -8,9 +8,11 @@ import { error, redirect } from "@sveltejs/kit";
 import type { PageServerLoad, Actions, RequestEvent } from "./$types";
 
 export const load: PageServerLoad = async ({ params }) => {
-  const device = await db.query.devices.findFirst({
-    where: eq(devices.id, params.id),
-  });
+  const device = await withQueryName("Devices.GetById", async () =>
+    await db.query.devices.findFirst({
+      where: eq(devices.id, params.id),
+    })
+  );
 
   if (!device) {
     throw error(404, "Device not found");
@@ -30,25 +32,27 @@ export const actions: Actions = {
     }
 
     try {
-      await db
-        .update(devices)
-        .set({
-          enabled: form.data.enabled,
-          name: form.data.name,
-          slug: form.data.slug,
-          width: form.data.width,
-          height: form.data.height,
-          aspectRatioDelta: form.data.aspectRatioDelta,
-          nsfw: form.data.nsfw,
-          minWidth: form.data.minWidth ?? null,
-          maxWidth: form.data.maxWidth ?? null,
-          minHeight: form.data.minHeight ?? null,
-          maxHeight: form.data.maxHeight ?? null,
-          minFilesize: form.data.minFilesize ?? null,
-          maxFilesize: form.data.maxFilesize ?? null,
-          updatedAt: new Date(),
-        })
-        .where(eq(devices.id, params.id));
+      await withQueryName("Devices.Update", async () =>
+        await db
+          .update(devices)
+          .set({
+            enabled: form.data.enabled,
+            name: form.data.name,
+            slug: form.data.slug,
+            width: form.data.width,
+            height: form.data.height,
+            aspectRatioDelta: form.data.aspectRatioDelta,
+            nsfw: form.data.nsfw,
+            minWidth: form.data.minWidth ?? null,
+            maxWidth: form.data.maxWidth ?? null,
+            minHeight: form.data.minHeight ?? null,
+            maxHeight: form.data.maxHeight ?? null,
+            minFilesize: form.data.minFilesize ?? null,
+            maxFilesize: form.data.maxFilesize ?? null,
+            updatedAt: new Date(),
+          })
+          .where(eq(devices.id, params.id))
+      );
 
       redirect(303, "/devices");
     } catch (err: any) {
@@ -64,7 +68,9 @@ export const actions: Actions = {
 // Handle DELETE requests
 export async function DELETE({ params }: RequestEvent) {
   try {
-    await db.delete(devices).where(eq(devices.id, params.id));
+    await withQueryName("Devices.Delete", async () =>
+      await db.delete(devices).where(eq(devices.id, params.id))
+    );
     return new Response(null, { status: 204 });
   } catch (err) {
     console.error("Failed to delete device:", err);

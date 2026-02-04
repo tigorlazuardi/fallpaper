@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@packages/otel-server": "workspace:*",
     "drizzle-orm": "catalog:",
     "uuidv7": "^1.1.0"
   },

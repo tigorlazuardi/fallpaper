@@ -1,5 +1,11 @@
 import { db } from "$lib/server/db";
-import { devices, sources, images, runs } from "@packages/database";
+import {
+  devices,
+  sources,
+  images,
+  runs,
+  withQueryName,
+} from "@packages/database";
 import { count, eq, or } from "drizzle-orm";
 import type { PageServerLoad } from "./$types";
 
@@ -14,39 +20,67 @@ export const load: PageServerLoad = async () => {
     allSources,
     allDevices,
   ] = await Promise.all([
-    db
-      .select({ count: count() })
-      .from(images)
-      .then((r) => r[0]?.count ?? 0),
-    db
-      .select({ count: count() })
-      .from(devices)
-      .then((r) => r[0]?.count ?? 0),
-    db
-      .select({ count: count() })
-      .from(sources)
-      .then((r) => r[0]?.count ?? 0),
-    db
-      .select({ count: count() })
-      .from(runs)
-      .where(or(eq(runs.state, "pending"), eq(runs.state, "running")))
-      .then((r) => r[0]?.count ?? 0),
-    db.query.images.findMany({
-      orderBy: (images, { desc }) => [desc(images.createdAt)],
-      limit: 50,
-      with: {
-        source: {
-          columns: {
-            id: true,
-            name: true,
+    withQueryName(
+      "Home.CountImages",
+      async () =>
+        await db
+          .select({ count: count() })
+          .from(images)
+          .then((r) => r[0]?.count ?? 0),
+    ),
+    withQueryName(
+      "Home.CountDevices",
+      async () =>
+        await db
+          .select({ count: count() })
+          .from(devices)
+          .then((r) => r[0]?.count ?? 0),
+    ),
+    withQueryName(
+      "Home.CountSources",
+      async () =>
+        await db
+          .select({ count: count() })
+          .from(sources)
+          .then((r) => r[0]?.count ?? 0),
+    ),
+    withQueryName(
+      "Home.CountPendingRuns",
+      async () =>
+        await db
+          .select({ count: count() })
+          .from(runs)
+          .where(or(eq(runs.state, "pending"), eq(runs.state, "running")))
+          .then((r) => r[0]?.count ?? 0),
+    ),
+    withQueryName(
+      "Home.GetRecentImages",
+      async () =>
+        await db.query.images.findMany({
+          orderBy: (images, { desc }) => [desc(images.createdAt)],
+          limit: 50,
+          with: {
+            source: {
+              columns: {
+                id: true,
+                name: true,
+              },
+            },
           },
-        },
-      },
-    }),
-    db.select({ id: sources.id, name: sources.name }).from(sources),
-    db
-      .select({ id: devices.id, name: devices.name, slug: devices.slug })
-      .from(devices),
+        }),
+    ),
+    withQueryName(
+      "Home.GetSourcesForFilter",
+      async () =>
+        await db.select({ id: sources.id, name: sources.name }).from(sources),
+    ),
+    withQueryName(
+      "Home.GetDevicesForFilter",
+      async () =>
+        await db
+          .select({ id: devices.id, name: devices.name, slug: devices.slug })
+          .from(devices),
+    ),
   ]);
 
   return {

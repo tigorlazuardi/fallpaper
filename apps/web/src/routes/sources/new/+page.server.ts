@@ -1,5 +1,5 @@
 import { db } from "$lib/server/db";
-import { sources, schedules, subscriptions, devices } from "@packages/database";
+import { sources, schedules, subscriptions, devices, withQueryName } from "@packages/database";
 import { redditSourceSchema, formDataToDbSource } from "$lib/schemas/source";
 import { superValidate, fail, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
@@ -10,9 +10,11 @@ export const load: PageServerLoad = async ({ url }) => {
   const kind = url.searchParams.get("kind");
 
   // Always load devices for the form
-  const allDevices = await db.query.devices.findMany({
-    orderBy: (devices, { asc }) => [asc(devices.name)],
-  });
+  const allDevices = await withQueryName("Sources.ListDevicesForForm", async () =>
+    await db.query.devices.findMany({
+      orderBy: (devices, { asc }) => [asc(devices.name)],
+    })
+  );
 
   // If no kind selected, return null form
   if (!kind || kind !== "reddit") {
@@ -51,34 +53,40 @@ export const actions: Actions = {
       const dbData = formDataToDbSource(form.data);
 
       // Insert source
-      const [newSource] = await db
-        .insert(sources)
-        .values({
-          enabled: dbData.enabled,
-          name: dbData.name,
-          kind: dbData.kind,
-          params: dbData.params,
-          lookupLimit: dbData.lookupLimit,
-        })
-        .returning({ id: sources.id });
+      const [newSource] = await withQueryName("Sources.Insert", async () =>
+        await db
+          .insert(sources)
+          .values({
+            enabled: dbData.enabled,
+            name: dbData.name,
+            kind: dbData.kind,
+            params: dbData.params,
+            lookupLimit: dbData.lookupLimit,
+          })
+          .returning({ id: sources.id })
+      );
 
       // Create schedules
       if (dbData.schedules.length > 0) {
-        await db.insert(schedules).values(
-          dbData.schedules.map((cron) => ({
-            sourceId: newSource.id,
-            cron,
-          }))
+        await withQueryName("Sources.InsertSchedules", async () =>
+          await db.insert(schedules).values(
+            dbData.schedules.map((cron) => ({
+              sourceId: newSource.id,
+              cron,
+            }))
+          )
         );
       }
 
       // Create subscriptions (device -> source links)
       if (dbData.deviceIds.length > 0) {
-        await db.insert(subscriptions).values(
-          dbData.deviceIds.map((deviceId) => ({
-            deviceId,
-            sourceId: newSource.id,
-          }))
+        await withQueryName("Sources.InsertSubscriptions", async () =>
+          await db.insert(subscriptions).values(
+            dbData.deviceIds.map((deviceId) => ({
+              deviceId,
+              sourceId: newSource.id,
+            }))
+          )
         );
       }
 

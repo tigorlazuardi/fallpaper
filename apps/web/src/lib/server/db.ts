@@ -1,11 +1,7 @@
 import { createDatabase } from "@packages/database";
 import { env } from "$env/dynamic/private";
-import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { mkdirSync } from "fs";
-
-// Get the directory of this file to resolve relative paths
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Database path from environment or default to project root/data
 const dataDir = env.DATABASE_PATH
@@ -25,4 +21,14 @@ const migrationsFolder = join(
   "drizzle"
 );
 
-export const db = createDatabase(dbPath, migrationsFolder);
+// Logging and tracing enabled by default
+// Set DB_LOGGING=false or OTEL_ENABLED=false to disable
+const enableLogging = env.DB_LOGGING !== "false";
+const enableTracing = env.OTEL_ENABLED !== "false";
+
+export const db = createDatabase({
+  path: dbPath,
+  migrationsFolder,
+  logging: enableLogging,
+  tracing: enableTracing,
+});
