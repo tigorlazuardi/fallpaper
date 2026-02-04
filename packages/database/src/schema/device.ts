@@ -22,7 +22,7 @@ export const devices = sqliteTable("devices", {
   width: integer("width").notNull(),
   
   // Aspect ratio tolerance (e.g., 0.2 means accept ratio +/- 0.2)
-  aspectRatioDelta: real("aspect_ratio_delta").notNull().default(0.2),
+  aspectRatioDeviation: real("aspect_ratio_deviation").notNull().default(0.2),
   
   // Resolution constraints (optional)
   minHeight: integer("min_height"),

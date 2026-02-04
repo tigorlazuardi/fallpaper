@@ -1,0 +1,1 @@
+ALTER TABLE `devices` RENAME COLUMN "aspect_ratio_delta" TO "aspect_ratio_deviation";

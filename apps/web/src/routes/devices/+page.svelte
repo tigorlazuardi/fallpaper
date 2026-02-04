@@ -64,7 +64,7 @@
 					<Table.Row>
 						<Table.Head>Name</Table.Head>
 						<Table.Head>Resolution</Table.Head>
-						<Table.Head>Aspect Ratio Delta</Table.Head>
+						<Table.Head>Aspect Ratio Deviation</Table.Head>
 						<Table.Head>NSFW</Table.Head>
 						<Table.Head>Status</Table.Head>
 						<Table.Head class="w-[100px]">Actions</Table.Head>
@@ -80,7 +80,7 @@
 								</div>
 							</Table.Cell>
 							<Table.Cell>{device.width} x {device.height}</Table.Cell>
-							<Table.Cell>{device.aspectRatioDelta}</Table.Cell>
+							<Table.Cell>{device.aspectRatioDeviation}</Table.Cell>
 							<Table.Cell>{getNsfwLabel(device.nsfw)}</Table.Cell>
 							<Table.Cell>
 								{#if device.enabled}

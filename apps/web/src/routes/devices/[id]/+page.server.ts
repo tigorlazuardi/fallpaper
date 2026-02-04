@@ -41,7 +41,7 @@ export const actions: Actions = {
             slug: form.data.slug,
             width: form.data.width,
             height: form.data.height,
-            aspectRatioDelta: form.data.aspectRatioDelta,
+            aspectRatioDeviation: form.data.aspectRatioDeviation,
             nsfw: form.data.nsfw,
             minWidth: form.data.minWidth ?? null,
             maxWidth: form.data.maxWidth ?? null,

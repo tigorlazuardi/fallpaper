@@ -164,23 +164,23 @@
 			</div>
 
 			<div class="space-y-2">
-				<Label for="aspectRatioDelta">Aspect Ratio Delta <span class="text-destructive">*</span></Label>
+				<Label for="aspectRatioDeviation">Aspect Ratio Deviation <span class="text-destructive">*</span></Label>
 				<Input
-					id="aspectRatioDelta"
-					name="aspectRatioDelta"
+					id="aspectRatioDeviation"
+					name="aspectRatioDeviation"
 					type="number"
-					bind:value={$form.aspectRatioDelta}
+					bind:value={$form.aspectRatioDeviation}
 					placeholder="0.2"
 					step="0.01"
 					min="0"
 					max="2"
-					aria-invalid={$errors.aspectRatioDelta ? 'true' : undefined}
+					aria-invalid={$errors.aspectRatioDeviation ? 'true' : undefined}
 				/>
 				<p class="text-xs text-muted-foreground">
 					Acceptable deviation from the target aspect ratio. E.g., 0.2 means +/- 0.2.
 				</p>
-				{#if $errors.aspectRatioDelta}
-					<p class="text-xs text-destructive">{$errors.aspectRatioDelta}</p>
+				{#if $errors.aspectRatioDeviation}
+					<p class="text-xs text-destructive">{$errors.aspectRatioDeviation}</p>
 				{/if}
 			</div>
 		</Card.Content>

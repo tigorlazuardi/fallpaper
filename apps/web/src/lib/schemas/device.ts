@@ -27,10 +27,10 @@ export const deviceSchema = z.object({
     .int({ error: "Height must be a whole number" })
     .positive({ error: "Height must be greater than 0" }),
 
-  aspectRatioDelta: z
+  aspectRatioDeviation: z
     .number()
-    .min(0, { error: "Aspect ratio delta must be 0 or greater" })
-    .max(2, { error: "Aspect ratio delta must be 2 or less" })
+    .min(0, { error: "Aspect ratio deviation must be 0 or greater" })
+    .max(2, { error: "Aspect ratio deviation must be 2 or less" })
     .default(0.2),
 
   minWidth: z
