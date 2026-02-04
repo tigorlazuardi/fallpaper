@@ -1,0 +1,1 @@
+ALTER TABLE `sources` ADD `lookup_limit` integer DEFAULT 100 NOT NULL;

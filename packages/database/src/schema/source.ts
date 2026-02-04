@@ -9,26 +9,35 @@ import { runs } from "./run";
 export const sources = sqliteTable(
   "sources",
   {
-    id: text("id").primaryKey().$defaultFn(() => uuidv7()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
 
     enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
 
     // Unique name, case insensitive index for sorting
     name: text("name").notNull().unique(),
 
-    // Source type e.g. 'reddit.v1'
+    // Source type e.g. 'reddit'
     kind: text("kind").notNull(),
 
     // JSON params for source configuration
     params: text("params", { mode: "json" }).notNull().default({}),
 
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+    // Limit of items to lookup for images (not the number of images to get)
+    lookupLimit: integer("lookup_limit").notNull().default(100),
+
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     index("sources_name_ci_idx").on(sql`${table.name} COLLATE NOCASE`),
     index("sources_kind_idx").on(table.kind),
-  ]
+  ],
 );
 
 export const sourcesRelations = relations(sources, ({ many }) => ({
