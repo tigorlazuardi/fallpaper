@@ -2,7 +2,7 @@ import { json } from "@sveltejs/kit";
 import { eq, desc } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import { runs, sources, withQueryName } from "@packages/database";
-import { createScheduledRun } from "$lib/server/scheduler";
+import { getScheduler } from "$lib/server/scheduler";
 import type { RequestHandler } from "./$types";
 
 /**
@@ -126,6 +126,14 @@ export const POST: RequestHandler = async ({ request }) => {
         })
         .returning()
     );
+
+    // Trigger immediate processing if requested
+    if (immediate) {
+      // Don't await - let it run in background so API responds quickly
+      getScheduler().triggerProcessing().catch((err) => {
+        console.error("Failed to trigger immediate processing:", err);
+      });
+    }
 
     return json(
       {

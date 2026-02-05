@@ -212,6 +212,28 @@ class SchedulerService {
   getIsRunning(): boolean {
     return this.isRunning;
   }
+
+  /**
+   * Trigger immediate processing of pending runs (don't wait for poll interval)
+   */
+  async triggerProcessing(): Promise<number> {
+    if (!this.isRunning) {
+      logger.warn("Scheduler not running, cannot trigger processing");
+      return 0;
+    }
+
+    logger.debug("Triggering immediate run processing");
+    try {
+      const processed = await processPendingRuns();
+      if (processed > 0) {
+        logger.info({ processed }, "Immediate processing completed");
+      }
+      return processed;
+    } catch (err) {
+      logger.error({ err }, "Error in immediate processing");
+      throw err;
+    }
+  }
 }
 
 // Singleton instance

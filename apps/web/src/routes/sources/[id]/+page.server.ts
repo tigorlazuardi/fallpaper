@@ -51,10 +51,23 @@ export const load: PageServerLoad = async ({ params }) => {
 
 export const actions: Actions = {
   default: async ({ request, params }) => {
-    const formData = await request.formData();
-    const action = formData.get("action");
+    // Clone request to read body twice if needed
+    const clonedRequest = request.clone();
+    
+    // Try to get submitAction from form data or JSON
+    let submitAction: string | undefined;
+    const contentType = request.headers.get('content-type') || '';
+    
+    if (contentType.includes('application/json')) {
+      const json = await request.json();
+      submitAction = json.submitAction;
+    } else {
+      const formData = await request.formData();
+      submitAction = formData.get('submitAction')?.toString();
+    }
 
-    const form = await superValidate(formData, zod4(redditSourceSchema));
+    // superValidate with cloned request handles both JSON and FormData
+    const form = await superValidate(clonedRequest, zod4(redditSourceSchema));
 
     if (!form.valid) {
       return fail(400, { form });
@@ -111,8 +124,8 @@ export const actions: Actions = {
         );
       }
 
-      // If action is "create_and_fetch", redirect with fetch param
-      if (action === "create_and_fetch") {
+      // If submitAction is "create_and_fetch", redirect with fetch param
+      if (submitAction === "create_and_fetch") {
         redirect(303, `/sources?fetch=${params.id}`);
       }
 

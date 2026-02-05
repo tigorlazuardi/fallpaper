@@ -171,7 +171,7 @@ export class RedditRunner implements SourceRunner<RedditRunnerConfig, RedditRunR
     try {
       for await (const batch of redditClient.fetchSubredditBatches({
         subreddit: params.subreddit,
-        sort: params.sort ?? "hot",
+        sort: params.sort ?? "new",
         period: params.period ?? "day",
         limit: source.lookupLimit,
       })) {

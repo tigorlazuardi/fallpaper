@@ -37,3 +37,6 @@ export {
   type DrizzleLogger,
   type DrizzleLoggerConfig,
 } from "./drizzle";
+
+// Fetch instrumentation exports
+export { instrumentFetch, restoreFetch } from "./fetch";

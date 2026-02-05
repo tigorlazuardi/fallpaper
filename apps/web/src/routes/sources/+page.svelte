@@ -3,13 +3,15 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Table from '$lib/components/ui/table';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Plus, Pencil, Trash2 } from 'lucide-svelte';
+	import { Plus, Pencil, Trash2, Play } from 'lucide-svelte';
 	import { SOURCE_KINDS } from '$lib/schemas/source';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let deleteTarget: { id: string; name: string } | null = $state(null);
+	let runningSourceId = $state<string | null>(null);
+	let runResult = $state<{ sourceId: string; success: boolean; message: string } | null>(null);
 
 	function getKindLabel(kind: string) {
 		return SOURCE_KINDS.find((k) => k.value === kind)?.label ?? kind;
@@ -39,6 +41,31 @@
 
 		if (response.ok) {
 			window.location.reload();
+		}
+	}
+
+	async function handleRun(sourceId: string) {
+		runningSourceId = sourceId;
+		runResult = null;
+
+		try {
+			const response = await fetch('/api/runs', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ sourceId, immediate: true })
+			});
+
+			const result = await response.json();
+
+			if (response.ok) {
+				runResult = { sourceId, success: true, message: `Run queued (ID: ${result.run.id})` };
+			} else {
+				runResult = { sourceId, success: false, message: result.error || 'Failed to create run' };
+			}
+		} catch (err) {
+			runResult = { sourceId, success: false, message: 'Network error' };
+		} finally {
+			runningSourceId = null;
 		}
 	}
 </script>
@@ -74,7 +101,7 @@
 						<Table.Head>Target</Table.Head>
 						<Table.Head>Lookup Limit</Table.Head>
 						<Table.Head>Status</Table.Head>
-						<Table.Head class="w-[100px]">Actions</Table.Head>
+						<Table.Head class="w-[140px]">Actions</Table.Head>
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
@@ -98,7 +125,16 @@
 								{/if}
 							</Table.Cell>
 							<Table.Cell>
-								<div class="flex items-center gap-2">
+								<div class="flex items-center gap-1">
+									<Button
+										variant="ghost"
+										size="icon"
+										onclick={() => handleRun(source.id)}
+										disabled={!source.enabled || runningSourceId === source.id}
+										title={source.enabled ? 'Run now' : 'Source is disabled'}
+									>
+										<Play class="h-4 w-4" />
+									</Button>
 									<Button variant="ghost" size="icon" href="/sources/{source.id}">
 										<Pencil class="h-4 w-4" />
 									</Button>
@@ -110,6 +146,11 @@
 										<Trash2 class="h-4 w-4" />
 									</Button>
 								</div>
+								{#if runResult?.sourceId === source.id}
+									<p class="text-xs mt-1 {runResult.success ? 'text-green-600' : 'text-destructive'}">
+										{runResult.message}
+									</p>
+								{/if}
 							</Table.Cell>
 						</Table.Row>
 					{/each}

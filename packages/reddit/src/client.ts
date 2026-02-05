@@ -138,19 +138,44 @@ export class RedditClient {
   }
 
   /**
-   * Fetch a single page of images from a subreddit
+   * Parse subreddit/user path and return the base URL path
+   * - /r/wallpapers -> /r/wallpapers
+   * - /user/username -> /user/username/submitted
+   * - /u/username -> /user/username/submitted
+   * - wallpapers (no prefix) -> /r/wallpapers
+   */
+  private parseTargetPath(target: string): string {
+    // Handle /user/ or /u/ prefix - these need /submitted suffix for posts
+    if (target.startsWith("/user/") || target.startsWith("/u/")) {
+      const username = target.replace(/^\/(user|u)\//, "");
+      return `/user/${username}/submitted`;
+    }
+    
+    // Handle /r/ prefix - use as-is
+    if (target.startsWith("/r/")) {
+      return target;
+    }
+    
+    // No prefix - assume subreddit
+    return `/r/${target}`;
+  }
+
+  /**
+   * Fetch a single page of images from a subreddit or user
    */
   async fetchSubreddit(options: FetchSubredditOptions): Promise<FetchSubredditResult> {
     const {
-      subreddit,
-      sort = "hot",
+      subreddit: target,
+      sort = "new",
       period = "day",
       limit = 25,
       after,
     } = options;
 
+    const basePath = this.parseTargetPath(target);
+
     // Build URL
-    let url = `${REDDIT_BASE_URL}/r/${subreddit}/${sort}.json?limit=${limit}&raw_json=1`;
+    let url = `${REDDIT_BASE_URL}${basePath}/${sort}.json?limit=${limit}&raw_json=1`;
     if (sort === "top" && period) {
       url += `&t=${period}`;
     }

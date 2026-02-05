@@ -1,12 +1,15 @@
 import { trace, context, SpanStatusCode } from "@opentelemetry/api";
 import { W3CTraceContextPropagator } from "@opentelemetry/core";
-import { getLogger } from "@packages/otel-server";
+import { getLogger, instrumentFetch } from "@packages/otel-server";
 import type { Handle } from "@sveltejs/kit";
 import { startScheduler } from "$lib/server/scheduler";
 
 const tracer = trace.getTracer("sveltekit");
 const propagator = new W3CTraceContextPropagator();
 const logger = getLogger();
+
+// Instrument global fetch for HTTP client logging
+instrumentFetch();
 
 // Start scheduler once on server startup (prevent multiple starts during hot reload)
 declare global {

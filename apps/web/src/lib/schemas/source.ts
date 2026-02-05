@@ -10,6 +10,28 @@ export type SourceKind = (typeof SOURCE_KINDS)[number]["value"];
 // Reddit subreddit pattern: /r/subreddit, /user/username, /u/username
 const redditSubredditPattern = /^\/(r|user|u)\/[a-zA-Z0-9_-]+$/;
 
+// Reddit sort options
+export const REDDIT_SORT_OPTIONS = [
+  { value: "new", label: "New" },
+  { value: "hot", label: "Hot" },
+  { value: "top", label: "Top" },
+  { value: "rising", label: "Rising" },
+] as const;
+
+export type RedditSortType = (typeof REDDIT_SORT_OPTIONS)[number]["value"];
+
+// Reddit top period options (only used when sort is "top")
+export const REDDIT_TOP_PERIOD_OPTIONS = [
+  { value: "hour", label: "Past Hour" },
+  { value: "day", label: "Past 24 Hours" },
+  { value: "week", label: "Past Week" },
+  { value: "month", label: "Past Month" },
+  { value: "year", label: "Past Year" },
+  { value: "all", label: "All Time" },
+] as const;
+
+export type RedditTopPeriod = (typeof REDDIT_TOP_PERIOD_OPTIONS)[number]["value"];
+
 // Common cron schedule presets
 export const SCHEDULE_PRESETS = [
   { value: "", label: "No schedule" },
@@ -39,6 +61,11 @@ export const redditSourceSchema = z.object({
     .regex(redditSubredditPattern, {
       error: "Must be in format /r/<subreddit>, /user/<username>, or /u/<username>",
     }),
+
+  sort: z.enum(["new", "hot", "top", "rising"]).default("new"),
+
+  // Only used when sort is "top"
+  topPeriod: z.enum(["hour", "day", "week", "month", "year", "all"]).default("day"),
 
   lookupLimit: z
     .number()
@@ -70,7 +97,11 @@ export function formDataToDbSource(data: SourceFormData) {
       enabled: data.enabled,
       name: data.name,
       kind: data.kind,
-      params: JSON.stringify({ subreddit: data.subreddit }),
+      params: {
+        subreddit: data.subreddit,
+        sort: data.sort,
+        period: data.sort === "top" ? data.topPeriod : undefined,
+      },
       lookupLimit: data.lookupLimit,
       schedules: data.schedules.filter((s) => s.trim() !== ""),
       deviceIds: data.deviceIds,
@@ -94,12 +125,14 @@ export function dbSourceToFormData(
   if (source.kind === "reddit") {
     const params = typeof source.params === "string" 
       ? JSON.parse(source.params) 
-      : source.params as { subreddit: string };
+      : source.params as { subreddit: string; sort?: RedditSortType; period?: RedditTopPeriod };
     return {
       enabled: source.enabled,
       name: source.name,
       kind: "reddit",
       subreddit: params.subreddit || "",
+      sort: params.sort || "new",
+      topPeriod: params.period || "day",
       lookupLimit: source.lookupLimit,
       schedules: schedules || [],
       deviceIds: deviceIds || [],

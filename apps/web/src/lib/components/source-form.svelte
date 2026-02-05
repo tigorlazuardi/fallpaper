@@ -9,7 +9,13 @@
 	import * as Select from '$lib/components/ui/select';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
-	import { redditSourceSchema, SCHEDULE_PRESETS, type RedditSourceFormData } from '$lib/schemas/source';
+	import {
+		redditSourceSchema,
+		SCHEDULE_PRESETS,
+		REDDIT_SORT_OPTIONS,
+		REDDIT_TOP_PERIOD_OPTIONS,
+		type RedditSourceFormData
+	} from '$lib/schemas/source';
 	import { Play, Plus, X } from 'lucide-svelte';
 	import type { Device } from '@packages/database';
 
@@ -31,6 +37,9 @@
 	);
 
 	const { form, errors, message, enhance, submitting } = superFormResult;
+
+	// Action state for submit buttons
+	let submitAction = $state<string | undefined>(undefined);
 
 	// Schedule management
 	let newScheduleMode = $state<'preset' | 'custom'>('preset');
@@ -150,6 +159,38 @@
 				{/if}
 			</div>
 
+			<div class="grid gap-4 sm:grid-cols-2">
+				<div class="space-y-2">
+					<Label for="sort">Sort By</Label>
+					<Select.Root type="single" bind:value={$form.sort} name="sort">
+						<Select.Trigger id="sort">
+							{REDDIT_SORT_OPTIONS.find((o) => o.value === $form.sort)?.label || 'Select...'}
+						</Select.Trigger>
+						<Select.Content>
+							{#each REDDIT_SORT_OPTIONS as option}
+								<Select.Item value={option.value} label={option.label} />
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+
+				{#if $form.sort === 'top'}
+					<div class="space-y-2">
+						<Label for="topPeriod">Time Period</Label>
+						<Select.Root type="single" bind:value={$form.topPeriod} name="topPeriod">
+							<Select.Trigger id="topPeriod">
+								{REDDIT_TOP_PERIOD_OPTIONS.find((o) => o.value === $form.topPeriod)?.label || 'Select...'}
+							</Select.Trigger>
+							<Select.Content>
+								{#each REDDIT_TOP_PERIOD_OPTIONS as option}
+									<Select.Item value={option.value} label={option.label} />
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					</div>
+				{/if}
+			</div>
+
 			<div class="space-y-2">
 				<Label for="lookupLimit">Lookup Limit <span class="text-destructive">*</span></Label>
 				<Input
@@ -246,6 +287,9 @@
 			<!-- Add new schedule -->
 			<div class="space-y-2">
 				<Label>Add Schedule</Label>
+				<p class="text-xs text-muted-foreground">
+					Select a schedule and press the + button to add it to the list. Schedules won't be saved until added.
+				</p>
 				<div class="flex gap-2">
 					<Select.Root
 						type="single"
@@ -296,12 +340,19 @@
 		</Card.Content>
 	</Card.Root>
 
+	<input type="hidden" name="submitAction" value={submitAction ?? ''} />
+
 	<div class="flex flex-wrap gap-4">
-		<Button type="submit" disabled={$submitting}>
+		<Button type="submit" disabled={$submitting} onclick={() => (submitAction = undefined)}>
 			{$submitting ? 'Saving...' : submitLabel}
 		</Button>
 		{#if showFetchNow}
-			<Button type="submit" name="action" value="create_and_fetch" variant="secondary" disabled={$submitting}>
+			<Button
+				type="submit"
+				variant="secondary"
+				disabled={$submitting}
+				onclick={() => (submitAction = 'create_and_fetch')}
+			>
 				<Play class="mr-2 h-4 w-4" />
 				{submitLabel === 'Create Source' ? 'Create and Fetch Now' : 'Save and Fetch Now'}
 			</Button>
