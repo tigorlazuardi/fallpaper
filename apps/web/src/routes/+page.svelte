@@ -3,6 +3,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
 	import type { PageData } from './$types';
+	import type { GalleryImage } from './+page.server';
 
 	let { data }: { data: PageData } = $props();
 
@@ -33,37 +34,154 @@
 
 	let sourceFilter = $state('all');
 	let deviceFilter = $state('all');
-	let nsfwFilter = $state('sfw');
+	let nsfwFilter = $state<'sfw' | 'all' | 'nsfw'>('sfw');
 
-	const sourceLabel = $derived(sourceOptions.find((o) => o.value === sourceFilter)?.label ?? 'All Sources');
-	const deviceLabel = $derived(deviceOptions.find((o) => o.value === deviceFilter)?.label ?? 'All Devices');
+	const sourceLabel = $derived(
+		sourceOptions.find((o) => o.value === sourceFilter)?.label ?? 'All Sources'
+	);
+	const deviceLabel = $derived(
+		deviceOptions.find((o) => o.value === deviceFilter)?.label ?? 'All Devices'
+	);
 	const nsfwLabel = $derived(nsfwOptions.find((o) => o.value === nsfwFilter)?.label ?? 'SFW Only');
+
+	// Pagination state
+	let allImages = $state<GalleryImage[]>([...data.images]);
+	let nextCursor = $state<string | null>(data.nextCursor);
+	let isLoading = $state(false);
+	let loadError = $state<string | null>(null);
+
+	// Sentinel element for infinite scroll
+	let sentinelEl: HTMLDivElement | undefined = $state();
+
+	// Type for image with deviceImages relation
+	type ImageWithDevices = GalleryImage & {
+		deviceImages?: Array<{
+			localPath: string;
+			device?: { slug: string } | null;
+		}>;
+	};
+
+	// Helper to build image URL from deviceImages relation
+	function getImageUrl(img: ImageWithDevices): string {
+		const deviceImage = img.deviceImages?.[0];
+		if (deviceImage?.device?.slug && deviceImage.localPath) {
+			const filename = deviceImage.localPath.split('/').pop();
+			if (filename) {
+				return `/api/images/${deviceImage.device.slug}/${filename}`;
+			}
+		}
+		return `https://picsum.photos/seed/${img.id}/${Math.min(img.width, 400)}/${Math.round((Math.min(img.width, 400) * img.height) / img.width)}`;
+	}
 
 	// Transform images for masonry display
 	const masonryItems = $derived(
-		data.images.map((img) => ({
+		(allImages as ImageWithDevices[]).map((img) => ({
 			id: img.id,
-			src:
-				img.thumbnailPath ||
-				`https://picsum.photos/seed/${img.id}/${Math.min(img.width, 400)}/${Math.round((Math.min(img.width, 400) * img.height) / img.width)}`,
+			src: getImageUrl(img),
 			title: img.title || 'Untitled',
 			width: img.width,
 			height: img.height,
 			sourceId: img.sourceId,
 			sourceName: img.source?.name,
-			nsfw: img.nsfw
+			nsfw: img.nsfw,
+			deviceSlug: img.deviceImages?.[0]?.device?.slug
 		}))
 	);
 
-	// Filter images based on selected filters
-	const filteredItems = $derived(
-		masonryItems.filter((img) => {
-			if (sourceFilter !== 'all' && img.sourceId !== sourceFilter) return false;
-			if (nsfwFilter === 'sfw' && img.nsfw === 1) return false;
-			if (nsfwFilter === 'nsfw' && img.nsfw !== 1) return false;
-			return true;
-		})
-	);
+	// Build query params for API calls
+	function buildQueryParams(cursor?: string | null): URLSearchParams {
+		const params = new URLSearchParams();
+		if (cursor) params.set('cursor', cursor);
+		if (sourceFilter !== 'all') params.set('sourceId', sourceFilter);
+		if (deviceFilter !== 'all') params.set('deviceId', deviceFilter);
+		params.set('nsfw', nsfwFilter);
+		return params;
+	}
+
+	// Fetch images from API
+	async function fetchImages(cursor?: string | null, append = false) {
+		if (isLoading) return;
+
+		isLoading = true;
+		loadError = null;
+
+		try {
+			const params = buildQueryParams(cursor);
+			const res = await fetch(`/api/gallery?${params.toString()}`);
+			if (!res.ok) {
+				throw new Error(`Failed to load: ${res.status}`);
+			}
+
+			const result = await res.json();
+
+			if (append) {
+				allImages = [...allImages, ...result.images];
+			} else {
+				allImages = result.images;
+			}
+			nextCursor = result.nextCursor;
+		} catch (err) {
+			loadError = err instanceof Error ? err.message : 'Failed to load images';
+			console.error('Failed to load images:', err);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	// Load more (append to existing)
+	function loadMore() {
+		if (!nextCursor || isLoading) return;
+		fetchImages(nextCursor, true);
+	}
+
+	// Track previous filter values (non-reactive to avoid effect loops)
+	let prevSource = 'all';
+	let prevDevice = 'all';
+	let prevNsfw: 'sfw' | 'all' | 'nsfw' = 'sfw';
+
+	// Reset and reload when filters change (skip initial mount)
+	$effect(() => {
+		// Read current filter values (these are tracked by the effect)
+		const currentSource = sourceFilter;
+		const currentDevice = deviceFilter;
+		const currentNsfw = nsfwFilter;
+
+		// Check if filters actually changed from previous values
+		const changed =
+			currentSource !== prevSource ||
+			currentDevice !== prevDevice ||
+			currentNsfw !== prevNsfw;
+
+		if (changed) {
+			// Update previous values (non-reactive, won't trigger effect)
+			prevSource = currentSource;
+			prevDevice = currentDevice;
+			prevNsfw = currentNsfw;
+			// Fetch fresh data with new filters
+			fetchImages(null, false);
+		}
+	});
+
+	// Setup IntersectionObserver for infinite scroll
+	$effect(() => {
+		if (!sentinelEl) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const entry = entries[0];
+				if (entry?.isIntersecting && nextCursor && !isLoading) {
+					loadMore();
+				}
+			},
+			{
+				rootMargin: '200px' // Start loading before reaching the end
+			}
+		);
+
+		observer.observe(sentinelEl);
+
+		return () => observer.disconnect();
+	});
 
 	let innerWidth = $state(0);
 
@@ -90,7 +208,7 @@
 <!-- Gallery -->
 <section>
 	<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-		<h2 class="text-lg font-semibold">Recent Images</h2>
+		<h2 class="text-lg font-semibold">Recent Images (Last 72h)</h2>
 		<div class="flex flex-wrap gap-2">
 			<Select.Root type="single" bind:value={sourceFilter}>
 				<Select.Trigger class="w-[130px]">
@@ -127,8 +245,8 @@
 		</div>
 	</div>
 
-	{#if filteredItems.length > 0}
-		<Masonry items={filteredItems} {minColWidth} {gap} idKey="id" animate={true}>
+	{#if masonryItems.length > 0}
+		<Masonry items={masonryItems} {minColWidth} {gap} idKey="id" animate={true}>
 			{#snippet children({ item })}
 				<div class="group relative overflow-hidden rounded-lg bg-card">
 					<img
@@ -152,10 +270,47 @@
 				</div>
 			{/snippet}
 		</Masonry>
+
+		<!-- Sentinel for infinite scroll -->
+		<div bind:this={sentinelEl} class="h-4"></div>
+
+		<!-- Loading indicator -->
+		{#if isLoading}
+			<div class="flex justify-center py-8">
+				<div
+					class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+				></div>
+			</div>
+		{/if}
+
+		<!-- Error message -->
+		{#if loadError}
+			<div class="py-4 text-center text-destructive">
+				<p>{loadError}</p>
+				<button class="mt-2 text-sm underline" onclick={loadMore}>Try again</button>
+			</div>
+		{/if}
+
+		<!-- End of results -->
+		{#if !nextCursor && !isLoading}
+			<p class="py-8 text-center text-muted-foreground">No more images</p>
+		{/if}
+	{:else if isLoading}
+		<div class="flex justify-center py-16">
+			<div
+				class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+			></div>
+		</div>
 	{:else}
 		<div class="flex flex-col items-center justify-center py-16 text-center">
 			<p class="text-muted-foreground">No images found</p>
-			<p class="text-sm text-muted-foreground/70">Add sources and run a fetch to get started</p>
+			<p class="text-sm text-muted-foreground/70">
+				{#if sourceFilter !== 'all' || deviceFilter !== 'all' || nsfwFilter !== 'sfw'}
+					Try adjusting your filters
+				{:else}
+					Add sources and run a fetch to get started
+				{/if}
+			</p>
 		</div>
 	{/if}
 </section>

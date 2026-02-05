@@ -1,0 +1,1 @@
+ALTER TABLE `devices` ADD `filename_pattern` text;

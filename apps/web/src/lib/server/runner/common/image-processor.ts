@@ -22,6 +22,10 @@ export interface SourceImage {
   downloadUrl: string;
   /** URL to the source website/page */
   websiteUrl: string;
+  /** Source-specific item ID (e.g., Reddit post ID) for filename construction */
+  sourceItemId: string;
+  /** Gallery/multi-image index (0 for single images) */
+  galleryIndex?: number;
   /** Image title */
   title?: string;
   /** Author/uploader name */
@@ -59,6 +63,15 @@ export interface ProcessedImage {
 }
 
 /**
+ * Function to build a discoverable filename.
+ * The filename should contain enough info to reconstruct the source URL.
+ */
+export type FilenameBuilder = (
+  image: SourceImage,
+  format: string
+) => string;
+
+/**
  * Configuration for image processor
  */
 export interface ImageProcessorConfig {
@@ -68,6 +81,8 @@ export interface ImageProcessorConfig {
   imageBaseDir: string;
   /** Temporary directory for downloads */
   tempDir?: string;
+  /** Function to build discoverable filename (from runner) */
+  buildFilename?: FilenameBuilder;
   /** Download configuration */
   download?: {
     /** Maximum concurrent downloads. Default: 4 */
@@ -272,6 +287,8 @@ export async function processDownloadedImage(
         .insert(images)
         .values({
           sourceId: config.sourceId,
+          sourceItemId: sourceImage.sourceItemId,
+          galleryIndex: sourceImage.galleryIndex ?? 0,
           websiteUrl: sourceImage.websiteUrl,
           downloadUrl: sourceImage.downloadUrl,
           checksum,
@@ -293,8 +310,11 @@ export async function processDownloadedImage(
     result.imageId = newImage.id;
     result.assignedDevices = [];
 
-    // Create device_images entries and copy files from temp
-    const filename = `${newImage.id}.${format}`;
+    // Build filename - use runner's builder or fallback to image ID
+    const filename = config.buildFilename
+      ? config.buildFilename(sourceImage, format)
+      : `${newImage.id}.${format}`;
+
     let isFirstDevice = true;
 
     for (const device of eligible) {

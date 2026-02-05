@@ -104,6 +104,20 @@ export interface SourceRunner<
    * @returns null if valid, error message if invalid
    */
   validateParams(params: unknown): string | null;
+
+  /**
+   * Build a discoverable filename for an image.
+   * Format should be: {source}_{id}[_{gallery}]_{timestamp}.{ext}
+   * The ID should allow reconstructing the source URL (e.g., redd.it/{id} for Reddit).
+   * 
+   * @param image - Source image data with sourceItemId, galleryIndex, sourceCreatedAt
+   * @param format - Image format/extension (e.g., "jpg")
+   * @returns Full filename with extension (e.g., "reddit_abc123_20260205_143000.jpg")
+   */
+  buildFilename(
+    image: { sourceItemId: string; galleryIndex?: number; sourceCreatedAt?: number | Date },
+    format: string
+  ): string;
 }
 
 /**

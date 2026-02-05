@@ -53,6 +53,8 @@ function toSourceImage(img: RedditImage): SourceImage {
   return {
     downloadUrl: img.imageUrl,
     websiteUrl: img.postUrl,
+    sourceItemId: img.postId,
+    galleryIndex: img.galleryIndex,
     title: img.title,
     author: img.author,
     authorUrl: img.authorUrl,
@@ -61,6 +63,20 @@ function toSourceImage(img: RedditImage): SourceImage {
     width: img.width,
     height: img.height,
   };
+}
+
+/**
+ * Format timestamp as YYYYMMDD_HHMMSS
+ */
+function formatTimestamp(unixSeconds?: number): string {
+  const date = unixSeconds ? new Date(unixSeconds * 1000) : new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const sec = String(date.getSeconds()).padStart(2, "0");
+  return `${year}${month}${day}_${hour}${min}${sec}`;
 }
 
 // ============================================================================
@@ -96,6 +112,31 @@ export class RedditRunner implements SourceRunner<RedditRunnerConfig, RedditRunR
     }
 
     return null;
+  }
+
+  /**
+   * Build a discoverable filename for Reddit images.
+   * Format: reddit_{postId}[_{gallery}]_{timestamp}.{ext}
+   * 
+   * The postId can be used to reconstruct URL: https://redd.it/{postId}
+   */
+  buildFilename(
+    image: { sourceItemId: string; galleryIndex?: number; sourceCreatedAt?: number | Date },
+    format: string
+  ): string {
+    // Format timestamp
+    const timestamp = typeof image.sourceCreatedAt === "number"
+      ? formatTimestamp(image.sourceCreatedAt)
+      : image.sourceCreatedAt
+        ? formatTimestamp(Math.floor(image.sourceCreatedAt.getTime() / 1000))
+        : formatTimestamp();
+
+    // Gallery suffix only if gallery index > 0
+    const gallerySuffix = image.galleryIndex && image.galleryIndex > 0 
+      ? `_${image.galleryIndex}` 
+      : "";
+
+    return `reddit_${image.sourceItemId}${gallerySuffix}_${timestamp}.${format}`;
   }
 
   async run(sourceId: string, config: RedditRunnerConfig): Promise<RedditRunResult> {
@@ -218,6 +259,7 @@ export class RedditRunner implements SourceRunner<RedditRunnerConfig, RedditRunR
           sourceId,
           imageBaseDir: config.imageBaseDir,
           tempDir: config.tempDir,
+          buildFilename: this.buildFilename.bind(this),
           download: {
             maxConcurrent: config.maxConcurrentDownloads,
             minSpeedBytesPerSec: config.minSpeedBytesPerSec,

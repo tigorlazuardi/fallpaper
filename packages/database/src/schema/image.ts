@@ -13,6 +13,13 @@ export const images = sqliteTable(
       .notNull()
       .references(() => sources.id, { onDelete: "cascade" }),
 
+    // Source-specific item ID for URL reconstruction (e.g., Reddit post ID)
+    // Can visit redd.it/{sourceItemId} for Reddit
+    sourceItemId: text("source_item_id"),
+    
+    // Gallery index for multi-image posts (0 for single image)
+    galleryIndex: integer("gallery_index").default(0),
+
     // URLs
     websiteUrl: text("website_url").notNull(),
     downloadUrl: text("download_url").notNull().unique(),
@@ -43,6 +50,7 @@ export const images = sqliteTable(
   },
   (table) => [
     index("images_source_id_idx").on(table.sourceId),
+    index("images_source_item_id_idx").on(table.sourceItemId),
     index("images_checksum_idx").on(table.checksum),
     index("images_aspect_ratio_idx").on(table.aspectRatio),
     index("images_nsfw_idx").on(table.nsfw),
