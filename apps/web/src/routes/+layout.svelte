@@ -46,7 +46,7 @@
 
 	<!-- Main content -->
 	<main class="min-h-screen md:pl-56">
-		<div class="px-4 py-6 max-w-7xl mx-auto">
+		<div class="sm:px-4 py-6 max-w-7xl mx-auto">
 			{@render children()}
 		</div>
 	</main>

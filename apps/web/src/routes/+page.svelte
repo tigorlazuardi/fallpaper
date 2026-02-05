@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Masonry from 'svelte-bricks';
+	import Masonry from '$lib/components/masonry/Masonry.svelte';
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
 	import type { PageData } from './$types';
@@ -185,12 +185,17 @@
 
 	let innerWidth = $state(0);
 
-	const minColWidth = $derived(innerWidth < 640 ? 150 : 250);
 	const gap = $derived(innerWidth < 640 ? 4 : 12);
+	// On mobile: calculate exact width for 2 columns to fill screen
+	// On desktop: use fixed min width
+	const minColWidth = $derived(
+		innerWidth < 640 ? Math.floor((innerWidth - gap) / 2) : 250
+	);
+	const fitWidth = $derived(innerWidth >= 640);
 </script>
 
 <!-- Metrics -->
-<section class="mb-6">
+<section class="mb-6 px-4 sm:px-0">
 	<div class="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-4">
 		{#each metrics as metric}
 			<Card.Root>
@@ -207,7 +212,7 @@
 
 <!-- Gallery -->
 <section>
-	<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+	<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
 		<h2 class="text-lg font-semibold">Recent Images (Last 72h)</h2>
 		<div class="flex flex-wrap gap-2">
 			<Select.Root type="single" bind:value={sourceFilter}>
@@ -246,7 +251,7 @@
 	</div>
 
 	{#if masonryItems.length > 0}
-		<Masonry items={masonryItems} {minColWidth} {gap} idKey="id" animate={true}>
+		<Masonry items={masonryItems} columnWidth={minColWidth} gutter={gap} idKey="id" {fitWidth}>
 			{#snippet children({ item })}
 				<div class="group relative overflow-hidden rounded-lg bg-card">
 					<img
