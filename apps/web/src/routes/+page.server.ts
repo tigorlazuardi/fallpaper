@@ -164,7 +164,7 @@ export const load: PageServerLoad = async () => {
           .where(or(eq(runs.state, "pending"), eq(runs.state, "running")))
           .then((r) => r[0]?.count ?? 0),
     ),
-    withQueryName("Home.GetRecentImages", () => fetchImages()),
+    withQueryName("Home.GetRecentImages", () => fetchImages(undefined, { nsfw: "sfw" })),
     withQueryName(
       "Home.GetSourcesForFilter",
       async () =>
