@@ -2,6 +2,7 @@
 	import Masonry from '$lib/components/masonry/Masonry.svelte';
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
+	import { ImageModal, type ImageModalData } from '$lib/components/image-modal';
 	import type { PageData } from './$types';
 	import type { GalleryImage } from './+page.server';
 
@@ -55,6 +56,10 @@
 	// Sentinel element for infinite scroll
 	let sentinelEl: HTMLDivElement | undefined = $state();
 
+	// Image modal state
+	let modalOpen = $state(false);
+	let selectedImage = $state<ImageModalData | null>(null);
+
 	// Type for image with deviceImages relation
 	type ImageWithDevices = GalleryImage & {
 		deviceImages?: Array<{
@@ -86,9 +91,37 @@
 			sourceId: img.sourceId,
 			sourceName: img.source?.name,
 			nsfw: img.nsfw,
-			deviceSlug: img.deviceImages?.[0]?.device?.slug
+			deviceSlug: img.deviceImages?.[0]?.device?.slug,
+			// Additional metadata for modal
+			author: img.author,
+			authorUrl: img.authorUrl,
+			websiteUrl: img.websiteUrl,
+			filesize: img.filesize,
+			format: img.format,
+			sourceCreatedAt: img.sourceCreatedAt
 		}))
 	);
+
+	// Open image modal
+	function openImageModal(item: (typeof masonryItems)[number]) {
+		selectedImage = {
+			id: item.id,
+			src: item.src,
+			fullSrc: item.src, // Same URL for now, could be different for thumbnails
+			title: item.title,
+			width: item.width,
+			height: item.height,
+			filesize: item.filesize ?? undefined,
+			format: item.format ?? undefined,
+			nsfw: item.nsfw ?? undefined,
+			author: item.author ?? undefined,
+			authorUrl: item.authorUrl ?? undefined,
+			sourceName: item.sourceName ?? undefined,
+			websiteUrl: item.websiteUrl ?? undefined,
+			sourceCreatedAt: item.sourceCreatedAt ?? undefined
+		};
+		modalOpen = true;
+	}
 
 	// Build query params for API calls
 	function buildQueryParams(cursor?: string | null): URLSearchParams {
@@ -255,7 +288,11 @@
 	{#if masonryItems.length > 0}
 		<Masonry items={masonryItems} columnWidth={minColWidth} gutter={gap} idKey="id" {fitWidth}>
 			{#snippet children({ item })}
-				<div class="group relative overflow-hidden rounded-lg bg-card">
+				<button
+					type="button"
+					class="group relative overflow-hidden rounded-lg bg-card cursor-pointer w-full text-left"
+					onclick={() => openImageModal(item)}
+				>
 					<img
 						src={item.src}
 						alt={item.title}
@@ -274,7 +311,7 @@
 							{/if}
 						</div>
 					</div>
-				</div>
+				</button>
 			{/snippet}
 		</Masonry>
 
@@ -323,3 +360,6 @@
 </section>
 
 <svelte:window bind:innerWidth />
+
+<!-- Image Modal -->
+<ImageModal bind:open={modalOpen} image={selectedImage} />

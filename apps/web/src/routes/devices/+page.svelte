@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Plus, Pencil, Trash2 } from 'lucide-svelte';
+	import { Plus, Pencil, Trash2, Monitor, Smartphone } from 'lucide-svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -23,6 +24,10 @@
 		}
 	}
 
+	function isPortrait(device: { width: number; height: number }) {
+		return device.height > device.width;
+	}
+
 	async function handleDelete() {
 		if (!deleteTarget) return;
 
@@ -37,12 +42,12 @@
 </script>
 
 <div class="space-y-6">
-	<div class="flex items-center justify-between">
+	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 		<div>
 			<h1 class="text-2xl font-bold">Devices</h1>
 			<p class="text-muted-foreground">Manage your device configurations for wallpaper collection.</p>
 		</div>
-		<Button href="/devices/new">
+		<Button href="/devices/new" class="w-full sm:w-auto">
 			<Plus class="mr-2 h-4 w-4" />
 			Add Device
 		</Button>
@@ -58,13 +63,63 @@
 			</Button>
 		</div>
 	{:else}
-		<div class="rounded-md border">
+		<!-- Mobile: Card layout -->
+		<div class="grid gap-4 sm:hidden">
+			{#each data.devices as device}
+				<Card.Root>
+					<Card.Content class="p-4">
+						<div class="flex items-start justify-between gap-4">
+							<div class="flex items-start gap-3 min-w-0 flex-1">
+								<div class="mt-1 text-muted-foreground">
+									{#if isPortrait(device)}
+										<Smartphone class="h-5 w-5" />
+									{:else}
+										<Monitor class="h-5 w-5" />
+									{/if}
+								</div>
+								<div class="min-w-0 flex-1">
+									<div class="flex items-center gap-2 flex-wrap">
+										<p class="font-medium truncate">{device.name}</p>
+										{#if device.enabled}
+											<Badge variant="default" class="text-xs">Enabled</Badge>
+										{:else}
+											<Badge variant="secondary" class="text-xs">Disabled</Badge>
+										{/if}
+									</div>
+									<p class="text-xs text-muted-foreground truncate">{device.slug}</p>
+									<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+										<span>{device.width} x {device.height}</span>
+										<span>AR: ±{device.aspectRatioDeviation}</span>
+										<span>{getNsfwLabel(device.nsfw)}</span>
+									</div>
+								</div>
+							</div>
+							<div class="flex items-center gap-1 shrink-0">
+								<Button variant="ghost" size="icon" href="/devices/{device.id}">
+									<Pencil class="h-4 w-4" />
+								</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									onclick={() => (deleteTarget = { id: device.id, name: device.name })}
+								>
+									<Trash2 class="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					</Card.Content>
+				</Card.Root>
+			{/each}
+		</div>
+
+		<!-- Desktop: Table layout -->
+		<div class="hidden sm:block rounded-md border">
 			<Table.Root>
 				<Table.Header>
 					<Table.Row>
 						<Table.Head>Name</Table.Head>
 						<Table.Head>Resolution</Table.Head>
-						<Table.Head>Aspect Ratio Deviation</Table.Head>
+						<Table.Head>AR Deviation</Table.Head>
 						<Table.Head>NSFW</Table.Head>
 						<Table.Head>Status</Table.Head>
 						<Table.Head class="w-[100px]">Actions</Table.Head>
@@ -74,13 +129,22 @@
 					{#each data.devices as device}
 						<Table.Row>
 							<Table.Cell>
-								<div>
-									<p class="font-medium">{device.name}</p>
-									<p class="text-xs text-muted-foreground">{device.slug}</p>
+								<div class="flex items-center gap-2">
+									<div class="text-muted-foreground">
+										{#if isPortrait(device)}
+											<Smartphone class="h-4 w-4" />
+										{:else}
+											<Monitor class="h-4 w-4" />
+										{/if}
+									</div>
+									<div>
+										<p class="font-medium">{device.name}</p>
+										<p class="text-xs text-muted-foreground">{device.slug}</p>
+									</div>
 								</div>
 							</Table.Cell>
 							<Table.Cell>{device.width} x {device.height}</Table.Cell>
-							<Table.Cell>{device.aspectRatioDeviation}</Table.Cell>
+							<Table.Cell>±{device.aspectRatioDeviation}</Table.Cell>
 							<Table.Cell>{getNsfwLabel(device.nsfw)}</Table.Cell>
 							<Table.Cell>
 								{#if device.enabled}
