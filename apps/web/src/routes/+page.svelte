@@ -44,8 +44,10 @@
 	);
 	const nsfwLabel = $derived(nsfwOptions.find((o) => o.value === nsfwFilter)?.label ?? 'SFW Only');
 
-	// Pagination state
+	// Pagination state - intentionally capture initial value, data is managed via fetchImages()
+	// svelte-ignore state_referenced_locally
 	let allImages = $state<GalleryImage[]>([...data.images]);
+	// svelte-ignore state_referenced_locally
 	let nextCursor = $state<string | null>(data.nextCursor);
 	let isLoading = $state(false);
 	let loadError = $state<string | null>(null);
