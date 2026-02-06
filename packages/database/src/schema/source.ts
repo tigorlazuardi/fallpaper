@@ -27,6 +27,9 @@ export const sources = sqliteTable(
     // Limit of items to lookup for images (not the number of images to get)
     lookupLimit: integer("lookup_limit").notNull().default(100),
 
+    // NSFW handling: 0 = accept all (use post's nsfw flag), 1 = SFW only, 2 = NSFW only (mark all as NSFW)
+    nsfw: integer("nsfw").notNull().default(0),
+
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),

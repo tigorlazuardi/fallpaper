@@ -127,3 +127,23 @@ export interface FetchSubredditResult {
   /** Number of posts processed */
   postsProcessed: number;
 }
+
+/**
+ * Subreddit info from /about.json
+ */
+export interface SubredditInfo {
+  /** Subreddit name (without r/) */
+  name: string;
+  /** Display name */
+  title: string;
+  /** Description */
+  description: string;
+  /** Whether the subreddit is NSFW */
+  over18: boolean;
+  /** Number of subscribers */
+  subscribers: number;
+  /** Icon image URL */
+  iconUrl?: string;
+  /** Whether this is a user profile (u/) */
+  isUser: boolean;
+}

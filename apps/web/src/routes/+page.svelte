@@ -212,12 +212,12 @@
 
 <!-- Gallery -->
 <section>
-	<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0">
-		<h2 class="text-lg font-semibold">Recent Images (Last 72h)</h2>
-		<div class="flex flex-wrap gap-2">
+	<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-0 overflow-hidden">
+		<h2 class="text-lg font-semibold shrink-0">Recent Images (Last 72h)</h2>
+		<div class="flex flex-wrap gap-2 min-w-0">
 			<Select.Root type="single" bind:value={sourceFilter}>
-				<Select.Trigger class="w-[130px]">
-					{sourceLabel}
+				<Select.Trigger class="min-w-[120px] max-w-[180px]">
+					<span class="truncate">{sourceLabel}</span>
 				</Select.Trigger>
 				<Select.Content>
 					{#each sourceOptions as option}
@@ -227,8 +227,8 @@
 			</Select.Root>
 
 			<Select.Root type="single" bind:value={deviceFilter}>
-				<Select.Trigger class="w-[130px]">
-					{deviceLabel}
+				<Select.Trigger class="min-w-[120px] max-w-[200px]">
+					<span class="truncate">{deviceLabel}</span>
 				</Select.Trigger>
 				<Select.Content>
 					{#each deviceOptions as option}
@@ -238,8 +238,8 @@
 			</Select.Root>
 
 			<Select.Root type="single" bind:value={nsfwFilter}>
-				<Select.Trigger class="w-[110px]">
-					{nsfwLabel}
+				<Select.Trigger class="w-[100px]">
+					<span class="truncate">{nsfwLabel}</span>
 				</Select.Trigger>
 				<Select.Content>
 					{#each nsfwOptions as option}

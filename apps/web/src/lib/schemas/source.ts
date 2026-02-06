@@ -32,6 +32,15 @@ export const REDDIT_TOP_PERIOD_OPTIONS = [
 
 export type RedditTopPeriod = (typeof REDDIT_TOP_PERIOD_OPTIONS)[number]["value"];
 
+// NSFW handling options
+export const NSFW_OPTIONS = [
+  { value: 0, label: "Auto (from post)" },
+  { value: 1, label: "SFW Only" },
+  { value: 2, label: "NSFW Only (mark all as NSFW)" },
+] as const;
+
+export type NsfwOption = (typeof NSFW_OPTIONS)[number]["value"];
+
 // Common cron schedule presets
 export const SCHEDULE_PRESETS = [
   { value: "", label: "No schedule" },
@@ -74,6 +83,9 @@ export const redditSourceSchema = z.object({
     .max(1000, { error: "Lookup limit must be 1000 or less" })
     .default(300),
 
+  // NSFW handling: 0 = auto (from post), 1 = SFW only, 2 = NSFW only (mark all as NSFW)
+  nsfw: z.number().int().min(0).max(2).default(0),
+
   // Schedule cron expressions (multiple allowed)
   schedules: z
     .array(z.string().max(100, { error: "Schedule must be 100 characters or less" }))
@@ -103,6 +115,7 @@ export function formDataToDbSource(data: SourceFormData) {
         period: data.sort === "top" ? data.topPeriod : undefined,
       },
       lookupLimit: data.lookupLimit,
+      nsfw: data.nsfw,
       schedules: data.schedules.filter((s) => s.trim() !== ""),
       deviceIds: data.deviceIds,
     };
@@ -118,6 +131,7 @@ export function dbSourceToFormData(
     kind: string;
     params: unknown;
     lookupLimit: number;
+    nsfw: number;
   },
   schedules?: string[],
   deviceIds?: string[]
@@ -134,6 +148,7 @@ export function dbSourceToFormData(
       sort: params.sort || "new",
       topPeriod: params.period || "day",
       lookupLimit: source.lookupLimit,
+      nsfw: source.nsfw ?? 0,
       schedules: schedules || [],
       deviceIds: deviceIds || [],
     };

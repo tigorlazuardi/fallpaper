@@ -1,0 +1,1 @@
+ALTER TABLE `sources` ADD `nsfw` integer DEFAULT 0 NOT NULL;

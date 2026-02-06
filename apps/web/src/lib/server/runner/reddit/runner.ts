@@ -28,6 +28,14 @@ export interface RedditSourceParams {
 }
 
 /**
+ * NSFW handling mode from source.nsfw field
+ * 0 = Auto (use post's nsfw flag)
+ * 1 = SFW Only (skip NSFW posts)
+ * 2 = NSFW Only (mark all images as NSFW)
+ */
+export type NsfwMode = 0 | 1 | 2;
+
+/**
  * Reddit-specific runner configuration
  */
 export interface RedditRunnerConfig extends BaseRunnerConfig {
@@ -48,8 +56,17 @@ export interface RedditRunResult extends BaseRunResult {
 
 /**
  * Convert RedditImage to SourceImage for common processor
+ * @param img - Reddit image data
+ * @param nsfwMode - NSFW handling mode from source settings
+ * @returns SourceImage with adjusted nsfw flag based on mode
  */
-function toSourceImage(img: RedditImage): SourceImage {
+function toSourceImage(img: RedditImage, nsfwMode: NsfwMode): SourceImage {
+  // Determine final NSFW value based on mode:
+  // 0 = Auto: use post's nsfw flag
+  // 1 = SFW Only: should have been filtered out already, use post's flag
+  // 2 = NSFW Only: force all images to NSFW
+  const nsfw = nsfwMode === 2 ? true : img.nsfw;
+
   return {
     downloadUrl: img.imageUrl,
     websiteUrl: img.postUrl,
@@ -58,11 +75,26 @@ function toSourceImage(img: RedditImage): SourceImage {
     title: img.title,
     author: img.author,
     authorUrl: img.authorUrl,
-    nsfw: img.nsfw,
+    nsfw,
     sourceCreatedAt: img.createdAt,
     width: img.width,
     height: img.height,
   };
+}
+
+/**
+ * Filter images based on NSFW mode
+ * @param images - Array of Reddit images
+ * @param nsfwMode - NSFW handling mode from source settings
+ * @returns Filtered array (only for mode 1 which skips NSFW)
+ */
+function filterByNsfwMode(images: RedditImage[], nsfwMode: NsfwMode): RedditImage[] {
+  if (nsfwMode === 1) {
+    // SFW Only: skip images marked as NSFW
+    return images.filter((img) => !img.nsfw);
+  }
+  // For modes 0 (Auto) and 2 (NSFW Only), keep all images
+  return images;
 }
 
 /**
@@ -206,6 +238,9 @@ export class RedditRunner implements SourceRunner<RedditRunnerConfig, RedditRunR
     const params = source.params as RedditSourceParams;
     result.subreddit = params.subreddit;
 
+    // Get NSFW mode from source settings (default to 0 = Auto)
+    const nsfwMode = (source.nsfw ?? 0) as NsfwMode;
+
     // 5. Fetch and process in batches using async generator
     const redditClient = createRedditClient();
 
@@ -227,8 +262,24 @@ export class RedditRunner implements SourceRunner<RedditRunnerConfig, RedditRunR
           continue;
         }
 
+        // Filter by NSFW mode (mode 1 = SFW Only skips NSFW images)
+        const nsfwFilteredImages = filterByNsfwMode(batch.images, nsfwMode);
+        const skippedByNsfw = batch.images.length - nsfwFilteredImages.length;
+        
+        if (skippedByNsfw > 0) {
+          logger.debug(
+            { sourceId, skippedByNsfw },
+            `Skipped ${skippedByNsfw} NSFW images (SFW Only mode)`
+          );
+          result.imagesSkipped += skippedByNsfw;
+        }
+
+        if (nsfwFilteredImages.length === 0) {
+          continue;
+        }
+
         // Filter out already downloaded images
-        const imageUrls = batch.images.map((img) => img.imageUrl);
+        const imageUrls = nsfwFilteredImages.map((img) => img.imageUrl);
         const existingImages = await withQueryName("RedditRunner.CheckExisting", async () =>
           await db.query.images.findMany({
             where: inArray(images.downloadUrl, imageUrls),
@@ -237,8 +288,8 @@ export class RedditRunner implements SourceRunner<RedditRunnerConfig, RedditRunR
         );
         const existingUrlSet = new Set(existingImages.map((img) => img.downloadUrl));
 
-        const newImages = batch.images.filter((img) => !existingUrlSet.has(img.imageUrl));
-        const skippedExisting = batch.images.length - newImages.length;
+        const newImages = nsfwFilteredImages.filter((img) => !existingUrlSet.has(img.imageUrl));
+        const skippedExisting = nsfwFilteredImages.length - newImages.length;
 
         result.imagesSkipped += skippedExisting;
 
@@ -252,8 +303,8 @@ export class RedditRunner implements SourceRunner<RedditRunnerConfig, RedditRunR
           `Processing ${newImages.length} new images (${skippedExisting} already exist)`
         );
 
-        // Convert to SourceImage and process
-        const sourceImages = newImages.map(toSourceImage);
+        // Convert to SourceImage and process (apply NSFW mode for final flag)
+        const sourceImages = newImages.map((img) => toSourceImage(img, nsfwMode));
 
         const processResult = await downloadAndProcessImages(sourceImages, eligibleDevices, {
           sourceId,

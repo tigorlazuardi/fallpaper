@@ -10,6 +10,7 @@ export type {
   RedditMediaMetadata,
   FetchSubredditOptions,
   FetchSubredditResult,
+  SubredditInfo,
   SortType,
   TopPeriod,
 } from "./types";

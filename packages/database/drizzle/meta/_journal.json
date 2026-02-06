@@ -85,6 +85,13 @@
       "when": 1770284595007,
       "tag": "0011_futuristic_crystal",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1770346647202,
+      "tag": "0012_striped_shooting_star",
+      "breakpoints": true
     }
   ]
 }

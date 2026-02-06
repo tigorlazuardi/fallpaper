@@ -14,9 +14,10 @@
 		SCHEDULE_PRESETS,
 		REDDIT_SORT_OPTIONS,
 		REDDIT_TOP_PERIOD_OPTIONS,
+		NSFW_OPTIONS,
 		type RedditSourceFormData
 	} from '$lib/schemas/source';
-	import { Play, Plus, X } from 'lucide-svelte';
+	import { Play, Plus, X, Loader2 } from 'lucide-svelte';
 	import type { Device } from '@packages/database';
 
 	type Props = {
@@ -96,6 +97,44 @@
 	function isDeviceSelected(deviceId: string): boolean {
 		return $form.deviceIds.includes(deviceId);
 	}
+
+	// NSFW auto-detection state
+	let nsfwDetecting = $state(false);
+	let nsfwDetectedStatus = $state<'sfw' | 'nsfw' | null>(null);
+	let nsfwDetectError = $state<string | null>(null);
+
+	async function detectSubredditNsfw() {
+		const subreddit = $form.subreddit;
+		if (!subreddit || !subreddit.startsWith('/r/')) {
+			// Only detect for subreddits, not user profiles
+			nsfwDetectedStatus = null;
+			nsfwDetectError = null;
+			return;
+		}
+
+		nsfwDetecting = true;
+		nsfwDetectError = null;
+
+		try {
+			const response = await fetch(`/api/reddit/subreddit-info?subreddit=${encodeURIComponent(subreddit)}`);
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Failed to fetch subreddit info');
+			}
+			const data = await response.json();
+			nsfwDetectedStatus = data.over18 ? 'nsfw' : 'sfw';
+
+			// Auto-set NSFW option if it's currently auto (0) and subreddit is NSFW
+			if ($form.nsfw === 0 && data.over18) {
+				$form.nsfw = 2; // NSFW Only
+			}
+		} catch (err: unknown) {
+			nsfwDetectError = err instanceof Error ? err.message : 'Failed to detect NSFW status';
+			nsfwDetectedStatus = null;
+		} finally {
+			nsfwDetecting = false;
+		}
+	}
 </script>
 
 <form method="POST" use:enhance class="space-y-6">
@@ -142,13 +181,24 @@
 		<Card.Content class="space-y-4">
 			<div class="space-y-2">
 				<Label for="subreddit">Subreddit / User <span class="text-destructive">*</span></Label>
-				<Input
-					id="subreddit"
-					name="subreddit"
-					bind:value={$form.subreddit}
-					placeholder="/r/wallpapers"
-					aria-invalid={$errors.subreddit ? 'true' : undefined}
-				/>
+				<div class="flex items-center gap-2">
+					<Input
+						id="subreddit"
+						name="subreddit"
+						bind:value={$form.subreddit}
+						placeholder="/r/wallpapers"
+						aria-invalid={$errors.subreddit ? 'true' : undefined}
+						onblur={detectSubredditNsfw}
+						class="flex-1"
+					/>
+					{#if nsfwDetecting}
+						<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+					{:else if nsfwDetectedStatus === 'nsfw'}
+						<span class="text-xs font-medium px-2 py-1 rounded bg-red-500/20 text-red-500">NSFW</span>
+					{:else if nsfwDetectedStatus === 'sfw'}
+						<span class="text-xs font-medium px-2 py-1 rounded bg-green-500/20 text-green-500">SFW</span>
+					{/if}
+				</div>
 				<p class="text-xs text-muted-foreground">
 					Format: <code class="bg-muted px-1 rounded">/r/subreddit</code>,
 					<code class="bg-muted px-1 rounded">/user/username</code>, or
@@ -156,6 +206,9 @@
 				</p>
 				{#if $errors.subreddit}
 					<p class="text-xs text-destructive">{$errors.subreddit}</p>
+				{/if}
+				{#if nsfwDetectError}
+					<p class="text-xs text-amber-500">{nsfwDetectError}</p>
 				{/if}
 			</div>
 
@@ -209,6 +262,30 @@
 				{#if $errors.lookupLimit}
 					<p class="text-xs text-destructive">{$errors.lookupLimit}</p>
 				{/if}
+			</div>
+
+			<div class="space-y-2">
+				<Label for="nsfw">NSFW Handling</Label>
+				<Select.Root
+					type="single"
+					value={String($form.nsfw)}
+					onValueChange={(v) => ($form.nsfw = Number(v))}
+					name="nsfw"
+				>
+					<Select.Trigger id="nsfw">
+						{NSFW_OPTIONS.find((o) => o.value === $form.nsfw)?.label || 'Select...'}
+					</Select.Trigger>
+					<Select.Content>
+						{#each NSFW_OPTIONS as option}
+							<Select.Item value={String(option.value)} label={option.label} />
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<p class="text-xs text-muted-foreground">
+					<strong>Auto:</strong> Use post's NSFW flag.
+					<strong>SFW Only:</strong> Skip NSFW posts.
+					<strong>NSFW Only:</strong> Mark all images as NSFW (for NSFW subreddits where posts aren't always marked).
+				</p>
 			</div>
 		</Card.Content>
 	</Card.Root>

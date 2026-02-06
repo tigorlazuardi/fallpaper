@@ -4,6 +4,7 @@ import type {
   RedditImage,
   FetchSubredditOptions,
   FetchSubredditResult,
+  SubredditInfo,
 } from "./types";
 
 const REDDIT_BASE_URL = "https://www.reddit.com";
@@ -158,6 +159,65 @@ export class RedditClient {
     
     // No prefix - assume subreddit
     return `/r/${target}`;
+  }
+
+  /**
+   * Get subreddit or user info including NSFW status
+   */
+  async getSubredditInfo(target: string): Promise<SubredditInfo> {
+    // Determine if this is a user or subreddit
+    const isUser = target.startsWith("/user/") || target.startsWith("/u/");
+    
+    let aboutUrl: string;
+    let name: string;
+    
+    if (isUser) {
+      // For users, use /user/{username}/about.json
+      name = target.replace(/^\/(user|u)\//, "");
+      aboutUrl = `${REDDIT_BASE_URL}/user/${name}/about.json`;
+    } else {
+      // For subreddits, use /r/{subreddit}/about.json
+      name = target.replace(/^\/r\//, "");
+      aboutUrl = `${REDDIT_BASE_URL}/r/${name}/about.json`;
+    }
+
+    const response = await fetch(aboutUrl, {
+      headers: {
+        "User-Agent": this.userAgent,
+      },
+      signal: AbortSignal.timeout(this.timeout),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Reddit API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const info = data.data;
+
+    if (isUser) {
+      // User profile response
+      return {
+        name: info.name,
+        title: info.subreddit?.title || info.name,
+        description: info.subreddit?.public_description || "",
+        over18: info.subreddit?.over_18 ?? false,
+        subscribers: info.subreddit?.subscribers ?? 0,
+        iconUrl: info.icon_img || info.snoovatar_img,
+        isUser: true,
+      };
+    } else {
+      // Subreddit response
+      return {
+        name: info.display_name,
+        title: info.title,
+        description: info.public_description || "",
+        over18: info.over18 ?? false,
+        subscribers: info.subscribers ?? 0,
+        iconUrl: info.icon_img || info.community_icon?.split("?")[0],
+        isUser: false,
+      };
+    }
   }
 
   /**
